@@ -2187,18 +2187,18 @@ class CustomAuthToken(ObtainAuthToken):
 
             print("LOGGED IN")
 
-            # # Skip OTP verification if specified
-            # otp_challenge_sent = False
+            # Skip OTP verification if specified
+            otp_challenge_sent = False
 
-            # if not(user.otp_verified and user.otp_skip_till and user.otp_skip_till > timezone.now()):
-            #     user.otp_verified = False
+            if not(user.otp_verified and user.otp_skip_till and user.otp_skip_till > timezone.now()):
+                user.otp_verified = False
 
-            # user.save()
-            # login(request, user)
+            user.save()
+            login(request, user)
 
-            # if not (user.otp_verified and user.otp_skip_till and user.otp_skip_till > timezone.now()):
-            #     send_otp_challenge(user)
-            #     otp_challenge_sent = True
+            if not (user.otp_verified and user.otp_skip_till and user.otp_skip_till > timezone.now()):
+                send_otp_challenge(user)
+                otp_challenge_sent = True
 
         except ValidationError:
             if settings.DEBUG:
@@ -2213,7 +2213,7 @@ class CustomAuthToken(ObtainAuthToken):
         return Response({
             'token': token.key,
             'user_id': user.id,
-            # 'otp_challenge_sent': otp_challenge_sent,
+            'otp_challenge_sent': otp_challenge_sent,
             'institutional_use': user.institutional_use,
         })
 
