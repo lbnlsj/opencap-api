@@ -36,7 +36,10 @@ ALLOWED_HOSTS = [HOST,"*"]
 CORS_ALLOW_ALL_ORIGINS = True
 
 # Application definition
-
+FILE_UPLOAD_HANDLERS = [
+    'django.core.files.uploadhandler.MemoryFileUploadHandler',
+    'django.core.files.uploadhandler.TemporaryFileUploadHandler',
+]
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -56,7 +59,10 @@ INSTALLED_APPS = [
     'django_extensions',
 
     'rest_framework_swagger',
-    'drf_yasg'
+    'drf_yasg',
+ 
+    'storages'
+
 ]
 
 SWAGGER_SETTINGS = {
@@ -179,7 +185,12 @@ AUTH_USER_MODEL = 'mcserver.User'
 # AWS_STORAGE_BUCKET_NAME = config("AWS_STORAGE_BUCKET_NAME")
 AWS_S3_OPENCAP_PUBLIC_BUCKET = config("AWS_S3_OPENCAP_PUBLIC_BUCKET", default="mc-opencap-public")
 
-DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+# 开发环境使用本地存储，生产环境使用 S3
+if DEBUG:
+    DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
+else:
+    DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+# DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
 AWS_S3_REGION_NAME = config("REGION", default="us-west-2")
 
 AWS_S3_ENDPOINT_URL = config('AWS_S3_ENDPOINT_URL', default=None)
@@ -194,8 +205,13 @@ STATICFILES_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
 #DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 ARCHIVES_ROOT = config('ARCHIVES_ROOT', default=os.path.join(MEDIA_ROOT, 'archives'))
+MEDIA_URL = '/media/'
 
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+# EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+if DEBUG:
+    EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+else:
+    EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 
 # SENDGRID_API_KEY = config('SENDGRID_API_KEY')
 

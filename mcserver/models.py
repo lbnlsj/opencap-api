@@ -59,9 +59,12 @@ class User(AbstractUser):
 
 
 class Session(models.Model):
+    # id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    # user = models.ForeignKey(User, blank=False, null=False, on_delete=models.CASCADE)
+    # qrcode = models.FileField(blank=True, null=True)
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.ForeignKey(User, blank=False, null=False, on_delete=models.CASCADE)
-    qrcode = models.FileField(blank=True, null=True)
+    qrcode = models.FileField(upload_to='qrcodes', blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True, db_index=True)
     updated_at = models.DateTimeField(auto_now=True)
     meta = models.JSONField(blank=True, null=True)

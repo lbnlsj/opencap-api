@@ -522,11 +522,11 @@ class SessionViewSet(viewsets.ModelViewSet):
 
     ## New session GET '/new/'
     # Creates a new session, returns session id and the QR code
+
     @action(detail=False)
     def new(self, request):
         try:
             session = Session()
-
             user = request.user
 
             if not user.is_authenticated:
@@ -534,33 +534,57 @@ class SessionViewSet(viewsets.ModelViewSet):
             session.user = user
             session.save()
 
-            img = qrcode.make("{}/sessions/{}/status/".format(settings.HOST_URL, session.id))
-            print(session.id)
+            print(f"Session created with ID: {session.id}")
 
-            # Hack for local builds on windows
-            if platform.system() == 'Windows':
-                cDir = os.path.dirname(os.path.abspath(__file__))
-                tmpDir = os.path.join(cDir, 'tmp')
-                os.makedirs(tmpDir, exist_ok=True)
-                path = os.path.join(tmpDir, "{}.png".format(session.id))
-            else:
-                path = "/tmp/{}.png".format(session.id)
-            img.save(path, "png")
+            # 使用 settings.MEDIA_ROOT 而不是 /tmp/
+            media_root = os.path.join(settings.MEDIA_ROOT, 'qrcodes')
+            os.makedirs(media_root, exist_ok=True)
+            
+            qr_url = "{}/sessions/{}/status/".format(settings.HOST_URL, session.id)
+            print(f"QR URL: {qr_url}")
+            
+            img = qrcode.make(qr_url)
+            
+            # 生成二维码文件名
+            qr_filename = f"{session.id}.png"
+            path = os.path.join(media_root, qr_filename)
+            print(f"Saving QR code to: {path}")
+            
+            # 保存二维码图片
+            img.save(path, "PNG")
+            print("QR code image saved successfully")
 
-            with open(path, "rb") as fh:
-                with ContentFile(fh.read()) as file_content:
-                    session.qrcode.save("{}.png".format(session.id), file_content)
-                    session.save()
+            # 使用 Django 的 File 对象来处理文件
+            from django.core.files import File
+            with open(path, 'rb') as f:
+                session.qrcode.save(qr_filename, File(f), save=True)
+
+            print("Session updated with QR code")
 
             serializer = SessionSerializer(Session.objects.filter(id=session.id), many=True)
+            
+            # 清理临时文件
+            if os.path.exists(path):
+                os.remove(path)
+                print("Temporary file cleaned up")
 
-        except Exception:
+            return Response(serializer.data)
+
+        except Exception as e:
+            print(f"Error in new session creation: {str(e)}")
+            print(f"Error type: {type(e)}")
+            import traceback
+            print(f"Traceback: {traceback.format_exc()}")
             if settings.DEBUG:
-                raise APIException(_("error") % {"error_message": str(traceback.format_exc())})
-            raise APIException(_("session_create_error"))
+                return Response({
+                    'error': str(e),
+                    'traceback': traceback.format_exc()
+                }, status=500)
+            return Response({'error': 'Internal server error'}, status=500)
 
-        return Response(serializer.data)
-    
+
+
+
     ## Get and send QR code
     @action(detail=True)
     def get_qr(self, request, pk):
